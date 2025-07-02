@@ -1,43 +1,48 @@
-# Telgea <-> New MVNO Integration – Architecture & Approach
+# Telgea ⇄ New MVNO Integration
 
-## Goals
+## Architecture & Approach
 
--   Translate heterogeneous MVNO APIs (SOAP & REST) into Telgea’s **internal normalized format**.
--   Ensure testability, observability, clear separation-of-concerns, and future MVNO plug-in capability.
+### 1 Objectives
 
-## Key Decisions
+| Goal                             | Why it matters                                                          |
+| -------------------------------- | ----------------------------------------------------------------------- |
+| **Normalize MVNO data**          | Telgea’s internal systems rely on a single canonical schema.            |
+| **Decouple transport & mapping** | New MVNOs (SOAP, REST, MQ, CSV…) can be plugged in with minimal change. |
+| **Observability first**          | Fast diagnosis of partner issues; chargebacks depend on traceability.   |
+| **Safe monetary handling**       | No floating-point drift; full-precision amounts preserved.              |
 
-| Topic               | Decision                                                | Rationale                                        |
-| ------------------- | ------------------------------------------------------- | ------------------------------------------------ |
-| **Pattern**         | _Adapter + Normalizer_                                  | Decouple external schemas from core.             |
-| **Transport**       | Node HTTP/HTTPS via Axios (REST) & `strong-soap` (SOAP) | Mature, TS typings available.                    |
-| **Mapping**         | Pure functions in `/mappers`                            | No side-effects -> easier to test.               |
-| **Validation**      | `zod` schemas at ingress/egress                         | Early failure, typed guarantees.                 |
-| **Logging/Tracing** | `pino` + OpenTelemetry                                  | Structured JSON logs, distributed tracing ready. |
-| **Testing**         | Jest + `nock`                                           | Fast, deterministic unit tests.                  |
+---
 
-## Flow (see diagram)
+### 2 High-Level Flow
 
-1. **MVNO Adapters** receive messages (push or poll).
-2. Raw payloads → **Schemas/DTOs**.
-3. **Mappers** transform into `InternalUsageRecord`.
-4. Records published to **Telgea Normalizer API** (single responsibility).
-5. **Observability** everywhere (trace-id propagates).
+![alt text](image.png)
 
-## Folder Layout (abridged)
+-   Adapters (IO) – Lightweight Express handlers (or message-queue consumers) receive partner traffic.
+
+-   Parsers / DTOs – Convert payloads to plain TypeScript objects & validate with zod.
+
+-   Mappers – Pure functions translate DTOs → InternalUsageRecord.
+
+-   Sink client – Publishes the record to Telgea’s Normalizer HTTP endpoint (idempotent POST).
+
+## Folder Layout
 
 ```
 ├── readMe.md # Architecture & Approach
-├── src
-│ ├── adapters # inbound IO
-│ │ ├── rest # empty
-│ │ └── soap # empty
-│ ├── mappers # pure data transforms
-│ ├── models # TS types / zod schemas
-│ ├── utils # logger, config, http client wrapper
-│ └── index.ts # composition root
-├── test # jest unit tests
-└── package.json # scripts, dev-deps
+├── src/
+│   ├── adapters/
+│   │   ├── rest/usageHandler.ts
+│   │   └── soap/chargeSmsHandler.ts
+│   ├── parsers/              # XML → DTO, JSON validation
+│   ├── mappers/              # DTO → internal model
+│   ├── models/               # Type & zod schemas
+│   ├── utils/                # logger, config, httpClient
+│   └── index.ts              # Express composition root
+├── test/
+│   ├── fixtures/             # sample XML/JSON
+│   ├── restMapper.test.ts
+│   └── soapMapper.test.ts
+└── package.json / tsconfig.json / jest.config.cjs
 ```
 
 ### Quick Start
