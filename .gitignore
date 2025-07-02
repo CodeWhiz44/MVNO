@@ -1,0 +1,31 @@
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Builds / bundles
+dist/
+coverage/
+build/
+*.tgz
+
+# TypeScript
+*.tsbuildinfo
+
+# Logs
+logs/
+*.log
+
+# Env / secrets
+.env
+.env.*
+
+# IDEs / editors
+.idea/
+.vscode/
+.DS_Store
+
+# OS junk
+*.swp
+Thumbs.db
