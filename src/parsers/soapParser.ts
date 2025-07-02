@@ -15,6 +15,8 @@ export function parseChargeSmsSoap(xml: string): ChargeSmsDTO {
         ignoreDeclaration: true,
         ignorePiTags: true,
         trimValues: true,
+        removeNSPrefix: true,
+        parseTagValue: false,
     });
 
     const json = parser.parse(xml);
